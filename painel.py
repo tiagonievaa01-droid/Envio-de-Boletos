@@ -4,6 +4,7 @@ import time
 import datetime
 import os
 import re
+import base64
 
 # IMPORTAÇÕES DA SUA AUTOMAÇÃO EXISTENTE
 from freshservice_client import criar_ticket_enviar_boleto
@@ -24,6 +25,14 @@ os.makedirs(DIR_TEMP, exist_ok=True)
 # ==========================================
 # FUNÇÕES DE SEGURANÇA, LOGS E LÓGICA
 # ==========================================
+def get_base64_image(image_path):
+    """Lê a imagem e converte para Base64 para injeção direta no HTML"""
+    try:
+        with open(image_path, "rb") as img_file:
+            return base64.b64encode(img_file.read()).decode()
+    except FileNotFoundError:
+        return ""
+
 def limpar_numero_pedido(pedido_str):
     return re.sub(r'(?i)PED[\.\s]*', '', str(pedido_str)).strip()
 
@@ -86,12 +95,16 @@ if not st.session_state["authenticated"]:
     with col_l2:
         st.markdown('<div class="login-card">', unsafe_allow_html=True)
         
-        if os.path.exists("logo.png"):
-            c_img1, c_img2, c_img3 = st.columns([1, 2, 1])
-            with c_img2:
-                st.image("logo.png", width=120)
+        # Injeção da Logo perfeitamente centralizada via HTML/CSS Base64
+        logo_base64 = get_base64_image("logo.png")
+        if logo_base64:
+            st.markdown(f'''
+                <div style="display: flex; justify-content: center; align-items: center; padding-bottom: 10px;">
+                    <img src="data:image/png;base64,{logo_base64}" alt="Logo SIN" style="max-height: 80px;">
+                </div>
+            ''', unsafe_allow_html=True)
         
-        st.markdown("<h2 style='text-align: center; color: #0f172a; margin-top: 15px; margin-bottom: 5px;'>Acesso Restrito</h2>", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align: center; color: #0f172a; margin-top: 10px; margin-bottom: 5px;'>Acesso Restrito</h2>", unsafe_allow_html=True)
         st.markdown("<p style='text-align: center; color: #64748b; font-size: 0.88rem; margin-bottom: 25px;'>Identifique-se para registo e insira a senha corporativa.</p>", unsafe_allow_html=True)
         
         with st.form("form_login"):
